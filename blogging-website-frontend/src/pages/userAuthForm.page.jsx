@@ -2,20 +2,21 @@ import {useRef, useContext} from "react";
 import AnimationWrapper from "../common/page-animation";
 import InputBox from "../components/input.component";
 import googleIcon from "../imgs/google.png";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
 import { storeInSession } from "../common/session";
 import { UserContext } from "../App";
+import { authWithGoogle } from "../common/firebase";
 
 
 const UserAuthForm = ({type}) => {
 
     const authForm = useRef();
-
+    
     let { userAuth, setUserAuth } = useContext(UserContext)
 
-
+// to make request to server and it will take serverRoute and formdata
     const UserAuthThroughServer = (serverRoute, formData) => {
 
         //axios library is used to make the request to the server.
@@ -25,8 +26,8 @@ const UserAuthForm = ({type}) => {
             
             setUserAuth(data)
         })
-        .catch(({ response }) => {
-            toast.error(response.data.error)
+        .catch((error) => {
+            toast.error(error.response?.data?.error || "Unable to connect to the server")
 
         })
     }
@@ -72,8 +73,32 @@ const UserAuthForm = ({type}) => {
 
     }
 
+    const handleGoogleAuth = (e) => {
+        
+        e.preventDefault();
+        authWithGoogle().then((user) => {
+            // Handle the authenticated user
+           let serverRoute = "/google-auth";
+
+           let formData ={
+            access_token: user.accessToken
+           }
+
+           UserAuthThroughServer(serverRoute, formData)
+
+        })
+        .catch(err =>{
+            toast.error("Google authentication failed. Please try again.");
+            return console.log(err);
+        })
+    }
+
     return (
 
+        userAuth?.access_token ? 
+        <Navigate to="/" />
+
+        :
         <AnimationWrapper keyValue={type}>
        
         <section className="h-cover flex items-center justify-center">
@@ -112,7 +137,7 @@ const UserAuthForm = ({type}) => {
                 <button 
                     className="btn-dark center mt-14"
                     type = "submit"
-                    onClick={handleSubmit}
+                    //onClick={handleSubmit}
 
                 >
                     {type.replace("-", " ")}
@@ -124,7 +149,9 @@ const UserAuthForm = ({type}) => {
                     <hr className="w-1/2 border-black" />
                 </div>
 
-                <button className="btn-dark flex items-center justify-center gap-4 w-[90%] center">
+                <button className="btn-dark flex items-center justify-center gap-4 w-[90%] center"
+                    onClick={handleGoogleAuth}
+                >
                     <img src={googleIcon} className = "w-5" />
                     continue with google
                 </button>
