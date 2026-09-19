@@ -1,4 +1,5 @@
 This website includes -
+
 1. Modern Blog Editor using Editor JS.
 2. Google Authentication for Users.
 3. Dynamic Blog Pages on dynamic urls.
@@ -13,4 +14,4 @@ This website includes -
 12. Edit profile option to update social links, bio and username
 13. Also user can change login password from settings.
 14. Its mobile responsive with modern design + fade in animation on pages.
-And much more.
+
