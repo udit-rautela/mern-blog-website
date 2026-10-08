@@ -12,6 +12,7 @@ import aws from "aws-sdk";
 
 //schema import
 import User from './Schema/User.js';
+import Blog from './Schema/Blog.js';
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccountKey)
@@ -45,7 +46,7 @@ const s3 = new aws.S3({
 
 })
 
-const generateUploadURL = async () => {
+const generateUploadURL = async (contentType) => {
 
     const date = new Date();
     const imageName = `${nanoid()} - ${date.getTime()}.jpeg`;
@@ -54,10 +55,30 @@ const generateUploadURL = async () => {
         Bucket: 'bucket-mern-blogging-website',
         Key: imageName,
         Expires: 1000,
-        ContentType: "image/jpeg"
+        ContentType: contentType
     })
 
 }
+
+// Verify JWT middleware
+const verifyJWT = (req, res, next) => {
+    const authHeader = req.get('authorization');
+    const token = authHeader && authHeader.split(' ')[1]; // Assuming, token is in the format "Bearer <token
+
+    if (token == null) {
+        return res.status(401).json({ error: "Access denied. No access token ." });
+    }
+
+    jwt.verify(token,  process.env.SECRET_ACCESS_KEY, (err, user) => {
+        if(err){
+            return res.status(403).json({ error: "Invalid token." });
+        }
+
+        req.user = user.id;
+        next();
+    })
+}
+
 
 // to get data from the DB
 const formatDatatoSend = (user) => {
@@ -83,7 +104,13 @@ const generateUsername = async(email) => {
 
 //upload imageURL root to the S3 bucket 
 server.get('/get-upload-url', (req,res) => {
-    generateUploadURL().then(url => res.status(200).json({uploadURL : url}))
+    const contentType = req.query.contentType || "image/jpeg";
+
+    if(!["image/jpeg", "image/png"].includes(contentType)){
+        return res.status(400).json({ error: "Only JPEG and PNG images are supported" });
+    }
+
+    generateUploadURL(contentType).then(url => res.status(200).json({uploadURL : url}))
     .catch(err => {
         console.log(err.message);
         return res.status(500).json({ error: err.message })
@@ -95,24 +122,31 @@ server.get('/get-upload-url', (req,res) => {
 // wapas frontend me send kar de rahe hai.
 server.post("/signup",(req, res) => {      // this is our login/signup for our google auth.
 
+    let authorId = req.user;
     let {fullname, email, password} = req.body;       // if not this, then we have to write req.body.fullname
 
+    if(!title.length){
+        return res.status(403).json({"error": "You must provide a Blog title "});
+    }
+
+    if(!draft){
+            // validating data from signup page
+        if(fullname.length < 3){
+            return res.status(403).json({"error": "Fullname must be three letters long"}); // invalid status code = 403
+        }
+        // checking email
+        if(!email.length){
+            return res.status(403).json({"error":"Enter the email"})
+        }
+        if(!emailRegex.test(email)){
+            return res.status(403).json({"error":"Enter the email in correct way"})
+        }
+        if(!passwordRegex.test(password)){
+            return res.status(403).json({"error":"Password should be 6 to 20 characters long with a numeric , 1 lowercase and 1 uppercase letter."})
+        }
+    }
 
 
-    // validating data from signup page
-    if(fullname.length < 3){
-        return res.status(403).json({"error": "Fullname must be three letters long"}); // invalid status code = 403
-    }
-    // checking email
-    if(!email.length){
-        return res.status(403).json({"error":"Enter the email"})
-    }
-    if(!emailRegex.test(email)){
-        return res.status(403).json({"error":"Enter the email in correct way"})
-    }
-    if(!passwordRegex.test(password)){
-        return res.status(403).json({"error":"Password should be 6 to 20 characters long with a numeric , 1 lowercase and 1 uppercase letter."})
-    }
 
     bcrypt.hash(password, 10, async (err, hashed_password) => {
 
@@ -228,6 +262,62 @@ server.post("/google-auth", async (req, res) => {
 
 
 })
+
+
+//only for logged in user, to create a blog. for that we will use the access_token to verify the user , which is stored in the session of the user.
+server.post('/create-blog',verifyJWT, (req, res) => {
+
+    let authorId = req.user;
+
+    let {title, content, banner, des, tags, draft} = req.body;
+    // validating the data from the frontend
+    
+    if(!title.length){
+        return res.status(403).json({"error": "Blog title required to publish the blog"});
+    }
+
+    if(!draft){
+        if(!des.length || des.length > 200){
+            return res.status(403).json({"error": "Blog description required to publish the blog and it should be less than 200 characters"});
+        }
+        if(!banner.length){
+            return res.status(403).json({"error": "Blog banner image required to publish the blog"});
+        }
+        if(!content || !content.blocks || !content.blocks.length){
+            return res.status(403).json({"error": "Blog content required to publish the blog"});
+        }
+        if(!tags.length || tags.length > 10){
+            return res.status(403).json({"error": "Blog tags required to publish the blog and it should be less than 10 tags"});
+        }
+    }
+
+    // looping through the tags to check if they are valid or not
+    tags = tags.map(tag => tag.toLowerCase());
+
+    let blog_id = title.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, "-").trim() + nanoid();
+
+    let blog = new Blog({
+        title, content, banner, des, tags, draft: Boolean(draft), author: authorId, blog_id
+    })
+    
+    blog.save().then(blog => {
+
+        let incrementVal = draft ? 0 : 1;
+
+        User.findOneAndUpdate({_id: authorId}, {$inc: {"account_info.total_posts" :  incrementVal}, $push : {"blogs": blog._id} })
+        .then(user => {
+            return res.status(200).json({ id: blog.blog_id});
+        })
+        .catch(err => {
+            return res.status(500).json({error: "failed to update the user data after creating the blog"});
+        })
+
+    })
+    .catch(err => {
+        return res.status(500).json({error: err.message});
+    })
+
+});
 
 server.listen(PORT, () => {
     console.log('listening on port -> ' + PORT); 

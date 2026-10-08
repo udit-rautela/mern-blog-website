@@ -1,3 +1,5 @@
+# access_token": eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYzJiYTA3NWUxY2NlNjVhY2NiOGY5OCIsImlhdCI6MTc5MTE0NjUwM30.2Qs3asudMmmNMY8ifZt70xKAjJI4011r5Qy4PxVkk44
+
 # POST http://localhost:3000/signup 
 # POST http://localhost:3000/signin 
 # Content-Type: application/json
@@ -7,4 +9,21 @@
 #     "password": "DishdishdisH6" 
 # } 
 
-GET http://localhost:3000/get-upload-url
+# GET http://localhost:3000/get-upload-url
+
+# POST http://localhost:3000/signup
+# Content-Type: application/json
+
+# {
+#   "fullname": "doggy",
+#   "email": "doggy1234@gmail.com",
+#   "password": "Doggy1234"
+# }
+
+POST http://localhost:3000/create-blog
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYzJiYTA3NWUxY2NlNjVhY2NiOGY5OCIsImlhdCI6MTc5MTE0NjUwM30.2Qs3asudMmmNMY8ifZt70xKAjJI4011r5Qy4PxVkk44
+
+{
+    "title": "My First Blog"
+}

@@ -9,6 +9,7 @@ import { storeInSession } from "../common/session";
 import { UserContext } from "../App";
 import { authWithGoogle } from "../common/firebase";
 
+const SERVER_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN || "http://localhost:3000";
 
 const UserAuthForm = ({type}) => {
 
@@ -20,7 +21,7 @@ const UserAuthForm = ({type}) => {
     const UserAuthThroughServer = (serverRoute, formData) => {
 
         //axios library is used to make the request to the server.
-        axios.post(import.meta.env.VITE_SERVER_DOMAIN + serverRoute, formData)
+        axios.post(SERVER_DOMAIN + serverRoute, formData)
         .then(({data}) => {
             storeInSession("user", JSON.stringify(data))
             
