@@ -15,3 +15,10 @@ This website includes -
 13. Also user can change login password from settings.
 14. Its mobile responsive with modern design + fade in animation on pages.
 
+## Google Authentication Configuration
+
+Copy `blogging-website-frontend/.env.example` to
+`blogging-website-frontend/.env` and fill in the Firebase web app values from
+the Firebase console. Enable Google as a sign-in provider in Firebase
+Authentication. The frontend uses these settings to obtain a Firebase ID token;
+the server verifies it with its Firebase Admin service account.

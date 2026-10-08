@@ -215,9 +215,8 @@ server.post("/signin", (req, res) => {
 
 server.post("/google-auth", async (req, res) => {
 
-    let {access_token} = req.body;
-    // verify the access token with Firebase Admin SDK
-    getAuth().verifyIdToken(access_token)
+    let {id_token} = req.body;
+    getAuth().verifyIdToken(id_token)
     .then(async (decodedUser) => {
 
         let {email, name, picture} = decodedUser;

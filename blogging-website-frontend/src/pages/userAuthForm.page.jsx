@@ -7,7 +7,7 @@ import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
 import { storeInSession } from "../common/session";
 import { UserContext } from "../App";
-import { authWithGoogle } from "../common/firebase";
+import { authWithGoogle } from "../common/firebase-auth";
 
 const SERVER_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN || "http://localhost:3000";
 
@@ -74,24 +74,16 @@ const UserAuthForm = ({type}) => {
 
     }
 
-    const handleGoogleAuth = (e) => {
-        
+    const handleGoogleAuth = async (e) => {
         e.preventDefault();
-        authWithGoogle().then((user) => {
-            // Handle the authenticated user
-           let serverRoute = "/google-auth";
 
-           let formData ={
-            access_token: user.accessToken
-           }
+        try {
+            const idToken = await authWithGoogle();
+            UserAuthThroughServer("/google-auth", { id_token: idToken });
+        } catch (error) {
+            toast.error(error.message || "Google authentication failed. Please try again.");
+        }
 
-           UserAuthThroughServer(serverRoute, formData)
-
-        })
-        .catch(err =>{
-            toast.error("Google authentication failed. Please try again.");
-            return console.log(err);
-        })
     }
 
     return (
